@@ -107,3 +107,24 @@ class AC_MaskPreview(SaveImage,AC_FUN):
             mask = torch.unsqueeze(mask, 0)
         preview = mask.reshape((-1, 1, mask.shape[-2], mask.shape[-1])).movedim(1, -1).expand(-1, -1, -1, 3)
         return self.save_images(preview, "MaskPreview")
+
+class AC_ImageCropByMask(AC_FUN):
+    @classmethod
+    def INPUT_TYPES(self):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "mask": ("MASK",),
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = 'imagecropbymask'
+
+    def imagecropbymask(self, image, mask):
+        image = tensor2pil(image)
+        mask_pil = tensor2pil(mask)
+        image = image.convert("RGBA")
+        image.putalpha(mask_pil.convert("L"))
+        image = pil2tensor(image)
+        return(image,)

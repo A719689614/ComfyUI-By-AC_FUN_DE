@@ -6,7 +6,7 @@ from .image_inline import picture_inline
 from .image_custom_inline import picture_custom_inline
 from .image_trans import AC_Image_pixel,AC_Image_blur_Simple
 from .layer_shadow import AC_layer_shadow
-from .image2mask import AC_Image2board,AC_MaskPreview, AC_Image2mask
+from .image2mask import AC_Image2board,AC_MaskPreview, AC_Image2mask, AC_ImageCropByMask
 
 NODE_CLASS_MAPPINGS = {
     "AC颜色选择器":AC_ColorPicker,
@@ -27,6 +27,7 @@ NODE_CLASS_MAPPINGS = {
     "AC图像转黑白板":AC_Image2board,
     "AC_Mask(预览)":AC_MaskPreview,
     "AC_Img2Mask":AC_Image2mask,
+    "AC_遮罩裁切":AC_ImageCropByMask,
 }
 
  
