@@ -339,6 +339,50 @@ class Ac_ImageColorTransfer(AC_FUN):
 
         return (torch.cat(batches, dim=0),)
 
+# RGB 转换
+class AC_RGBTransfer(AC_FUN):
+    @classmethod
+    def INPUT_TYPES(self):
+        return {
+            "required": {
+                "r": ("INT", {"default": 0, "min": 0, "max": 255, "step": 1}),
+                "g": ("INT", {"default": 0, "min": 0, "max": 255, "step": 1}),
+                "b": ("INT", {"default": 0, "min": 0, "max": 255, "step": 1}),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = 'rgb_transfer'
+
+    def rgb_transfer(self, r, g, b):
+        result = f"{r},{g},{b}"
+        return (result,)
+
+# 16进制转换RGB
+class AC_HEXTransfer(AC_FUN):
+    @classmethod
+    def INPUT_TYPES(self):
+        return {
+            "required": {
+                "hex": ("STRING", {"default": "#FF0000"}),
+            }
+        }
+    
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = 'hex_transfer'
+    
+    def hex_transfer(self, hex):
+        try:
+            h = hex.strip().lstrip("#").strip().lower()
+            if len(h) == 3:
+                h = "".join(c * 2 for c in h)
+            if len(h) != 6:
+                raise ValueError(f"Invalid hex length: {hex}")
+            r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+            return (f"{r},{g},{b}",)
+        except Exception:
+            return ("0,0,0",)
+
 if __name__ == '__main__':
     
     pass

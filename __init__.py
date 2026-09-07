@@ -4,7 +4,8 @@ from .image_opacity import Picture_Opacity
 from .image_trans import picture_Trans,Picture_Color_Grade,Picture_fill_color,Picture_fill_color_Custom,AC_ColorPicker,AC_ImageSharp
 from .image_inline import picture_inline
 from .image_custom_inline import picture_custom_inline
-from .image_trans import AC_Image_pixel,AC_Image_blur_Simple, AC_ColorTransferRange, Ac_ImageColorTransfer
+from .image_trans import (AC_Image_pixel,AC_Image_blur_Simple, AC_ColorTransferRange,
+                           Ac_ImageColorTransfer, AC_RGBTransfer, AC_HEXTransfer)
 from .layer_shadow import AC_layer_shadow
 from .image2mask import AC_Image2board,AC_MaskPreview, AC_Image2mask, AC_ImageCropByMask
 
@@ -26,6 +27,8 @@ NODE_CLASS_MAPPINGS = {
     "AC_图层阴影(调试)":AC_layer_shadow,
     "AC_图像转黑白板":AC_Image2board,
     "AC_颜色范围":AC_ColorTransferRange,
+    "AC_RGB转换":AC_RGBTransfer,
+    "AC_HEX转换":AC_HEXTransfer,
     "AC_图像颜色迁移":Ac_ImageColorTransfer,
     "AC_Mask(预览)":AC_MaskPreview,
     "AC_Img2Mask":AC_Image2mask,
