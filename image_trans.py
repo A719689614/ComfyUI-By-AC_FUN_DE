@@ -294,7 +294,7 @@ def _parse_tuple(text, expected_len):
     parts = [p.strip() for p in text.split(",")]
     if len(parts) != expected_len:
         raise ValueError(f"Expected {expected_len} values, got {len(parts)}: {text}")
-    return tuple(int(p) for p in parts)
+    return tuple(int(float(p)) for p in parts)
 
 class Ac_ImageColorTransfer(AC_FUN):
     @classmethod

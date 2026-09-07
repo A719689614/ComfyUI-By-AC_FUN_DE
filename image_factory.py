@@ -38,40 +38,71 @@ def rgb_to_hue_range(rgb, spread=20):
     arr = np.array([[rgb]], dtype=np.float32) / 255.0
     h, s, v = rgb_to_hsv(arr)
     hue_deg = float(h[0, 0] * 360.0)
-    h_min = max(0, int(hue_deg - spread))
-    h_max = min(360, int(hue_deg + spread))
-    return (h_min, h_max)
+    h_min = hue_deg - spread
+    h_max = hue_deg + spread
+    if h_min < 0:
+        h_min += 360.0
+    if h_max > 360:
+        h_max -= 360.0
+    return (int(round(h_min)), int(round(h_max)))
 
 
-def make_blue_clothing_mask(arr: np.ndarray, 
-                            color_range=(198, 248),
-                            dominance_threshold=0.035,
-                            saturation_threshold=0.075,
-                            # value_threshold: float = 0.15,
-                            max_filter_size=3,
-                            blur_radius=0.7
-                            ) -> np.ndarray:
-    """Build a soft mask for the original blue garment area."""
+def _dominant_channel_from_hue(hue_center: float) -> str:
+    hue_center = hue_center % 360.0
+    if hue_center >= 300.0 or hue_center < 60.0:
+        return "r"
+    if hue_center < 180.0:
+        return "g"
+    return "b"
+
+
+def make_color_mask(arr: np.ndarray,
+                    color_range=(198, 248),
+                    dominance_threshold=0.035,
+                    saturation_threshold=0.075,
+                    max_filter_size=3,
+                    blur_radius=0.7,
+                    dominant_channel: str = "auto",
+                    ) -> np.ndarray:
     try:
         h, s, v = rgb_to_hsv(arr)
         r, g, b = arr[..., 0], arr[..., 1], arr[..., 2]
         hue_deg = h * 360.0
-        # mask = blue_hue & blue_dominance & enough_color & enough_value & not_white
-        color_hue = (hue_deg >= color_range[0]) & (hue_deg <= color_range[1])
-        color_dominance = (b > r + dominance_threshold) & (b > g - dominance_threshold)
+
+        h_min, h_max = color_range
+        if h_min <= h_max:
+            color_hue = (hue_deg >= h_min) & (hue_deg <= h_max)
+        else:
+            color_hue = (hue_deg >= h_min) | (hue_deg <= h_max)
+
+        if dominant_channel == "auto":
+            center = (h_min + h_max) / 2.0 if h_min <= h_max else (h_min + h_max + 360.0) / 2.0
+            dominant_channel = _dominant_channel_from_hue(center)
+
+        if dominant_channel == "r":
+            color_dominance = (r > g + dominance_threshold) & (r > b + dominance_threshold)
+        elif dominant_channel == "g":
+            color_dominance = (g > r + dominance_threshold) & (g > b + dominance_threshold)
+        elif dominant_channel == "b":
+            color_dominance = (b > r + dominance_threshold) & (b > g + dominance_threshold)
+        else:
+            color_dominance = np.ones_like(hue_deg, dtype=bool)
+
         not_white = ~((r > 0.86) & (g > 0.86) & (b > 0.86) & (s < 0.20))
         enough_color = s > saturation_threshold
         enough_value = v > 0.15
 
         mask = color_hue & color_dominance & enough_color & enough_value & not_white
 
-        # Expand slightly, then blur for natural edges around hair, hands and seams.
         mask_img = Image.fromarray((mask.astype(np.uint8) * 255), "L")
         mask_img = mask_img.filter(ImageFilter.MaxFilter(max_filter_size))
         mask_img = mask_img.filter(ImageFilter.GaussianBlur(blur_radius))
         return np.asarray(mask_img).astype(np.float32) / 255.0
     except Exception as e:
         print(e)
+
+
+make_blue_clothing_mask = make_color_mask
 
 
 def recolor_image(
