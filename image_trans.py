@@ -1,5 +1,6 @@
 from .AC_FUN import AC_FUN
-from .image_factory import pil2tensor,tensor2pil
+import torch
+from .image_factory import pil2tensor, tensor2pil, recolor_image, transfer_rgb
 from  PIL import Image,ImageFilter
 import cv2
 import numpy as np
@@ -266,6 +267,77 @@ class AC_Image_blur_Simple(AC_FUN):
  
         image = pil2tensor(blurred_img)
         return(image,)
+
+class AC_ColorTransferRange(AC_FUN):
+    @classmethod
+    def INPUT_TYPES(self):
+        return {
+            "required": {
+                "rgb": ("STRING", {"default": "100,120,200"}),
+                "spread": ("INT", {"default": 20, "min": 1, "max": 60, "step": 1}),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    FUNCTION = 'get_color_range'
+
+    def get_color_range(self, rgb, spread):
+        try:
+            color_range = transfer_rgb(rgb, spread)
+            return (f"{color_range[0]},{color_range[1]}",)
+        except Exception as e:
+            print(f"[AC_ColorTransferRange] error: {e}")
+            return ("198,248",)
+
+def _parse_tuple(text, expected_len):
+    text = text.strip().strip("()[]{}")
+    parts = [p.strip() for p in text.split(",")]
+    if len(parts) != expected_len:
+        raise ValueError(f"Expected {expected_len} values, got {len(parts)}: {text}")
+    return tuple(int(p) for p in parts)
+
+class Ac_ImageColorTransfer(AC_FUN):
+    @classmethod
+    def INPUT_TYPES(self):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "color_range": ("STRING", {"default": "198,248"}),
+                "target_rgb": ("STRING", {"default": "98,100,80"}),
+                "shadow_strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 3.0, "step": 0.05}),
+                "dominance_threshold": ("FLOAT", {"default": 0.035, "min": 0.0, "max": 0.5, "step": 0.005}),
+                "saturation_threshold": ("FLOAT", {"default": 0.075, "min": 0.0, "max": 0.5, "step": 0.005}),
+                "max_filter_size": ("INT", {"default": 3, "min": 1, "max": 11, "step": 2}),
+                "blur_radius": ("FLOAT", {"default": 0.7, "min": 0.0, "max": 5.0, "step": 0.1}),
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    FUNCTION = 'imagecolortransfer'
+
+    def imagecolortransfer(self, image, color_range, target_rgb,
+                           shadow_strength, dominance_threshold,
+                           saturation_threshold, max_filter_size, blur_radius):
+        color_range = _parse_tuple(color_range, 2)
+        target_rgb = _parse_tuple(target_rgb, 3)
+
+        batches = []
+        for i in range(image.shape[0]):
+            pil_img = tensor2pil(image[i:i+1])
+            arr = np.asarray(pil_img.convert("RGB"))
+            result_arr = recolor_image(
+                arr,
+                color_range=color_range,
+                target_rgb=target_rgb,
+                shadow_strength=shadow_strength,
+                dominance_threshold=dominance_threshold,
+                saturation_threshold=saturation_threshold,
+                max_filter_size=max_filter_size,
+                blur_radius=blur_radius,
+            )
+            batches.append(pil2tensor(Image.fromarray(result_arr, "RGB")))
+
+        return (torch.cat(batches, dim=0),)
 
 if __name__ == '__main__':
     
